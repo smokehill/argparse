@@ -9,6 +9,7 @@ Simple cli argument parser.
 ```go
 func main() {
     arg := argparse.ArgumentParser()
+    arg.SetName("test")
     arg.SetDescription("Test script")
     arg.SetArgument("arg1", "arg1 info", []string{"a","b"})
     arg.SetArgument("arg2", "arg1 info", []string{})
@@ -18,7 +19,7 @@ func main() {
 
 Help info example:
 ```
-Usage: /tmp/go-build135913729/b001/exe/sample [--arg1] [--arg2]
+Usage: test [--arg1] [--arg2]
 Test script
 
 Optional arguments:

@@ -7,6 +7,7 @@ import (
 )
 
 type ArgParse struct {
+	name string
 	args map[string] *Arg
 	description string
 }
@@ -20,7 +21,12 @@ type Arg struct {
 }
 
 func ArgumentParser() *ArgParse {
-	return &ArgParse{map[string] *Arg{}, ""}
+	return &ArgParse{"", map[string] *Arg{}, ""}
+}
+
+func (a *ArgParse) SetName(name string) *ArgParse {
+	a.name = name
+	return a
 }
 
 func (a *ArgParse) SetDescription(description string) *ArgParse {
@@ -60,12 +66,17 @@ func (a *ArgParse) Parse() {
 }
 
 func (a *ArgParse) helpInfo() {
+	name := os.Args[0]
+	if a.name != "" {
+		name = a.name
+	}
+
 	usage := ""
 	for alias, _ := range a.args {
 		usage = usage + " [" + alias + "]"
 	}
 
-	fmt.Println("Usage: " + os.Args[0] + usage)
+	fmt.Println("Usage: " + name + usage)
 
 	if a.description != "" {
 		fmt.Println(a.description)
@@ -96,12 +107,17 @@ func (a *ArgParse) helpInfo() {
 }
 
 func (a *ArgParse) errorInfo(err string) {
+	name := os.Args[0]
+	if a.name != "" {
+		name = a.name
+	}
+
 	usage := ""
 	for alias, _ := range a.args {
 		usage = usage + " [" + alias + "]"
 	}
 
-	fmt.Println("Usage: " + os.Args[0] + usage)
+	fmt.Println("Usage: " + name + usage)
 	fmt.Println(err)
 }
 
