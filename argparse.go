@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 )
 
 type ArgParse struct {
 	name string
-	args map[string] *Arg
 	description string
+	args []*Arg
 }
 
 type Arg struct {
@@ -21,7 +22,7 @@ type Arg struct {
 }
 
 func ArgumentParser() *ArgParse {
-	return &ArgParse{"", map[string] *Arg{}, ""}
+	return &ArgParse{"", "", []*Arg{}}
 }
 
 func (a *ArgParse) SetName(name string) *ArgParse {
@@ -35,15 +36,16 @@ func (a *ArgParse) SetDescription(description string) *ArgParse {
 }
 
 func (a *ArgParse) SetArgument(name string, help string, choices []string) *ArgParse {
-	a.args[alias(name)] = &Arg{name, help, choices, "", false}
+	a.args = append(a.args, &Arg{name, help, choices, "", false})
 	return a
 }
 
 func (a *ArgParse) Has(name string) bool {
 	isset := false
-	if _, ok := a.args[alias(name)]; ok {
-		if a.args[alias(name)].active {
+	for _, arg := range a.args {
+		if arg.name == name && arg.active {
 			isset = true
+			break
 		}
 	}
 	return isset
@@ -51,8 +53,11 @@ func (a *ArgParse) Has(name string) bool {
 
 func (a *ArgParse) Get(name string) string {
 	value := ""
-	if a.Has(name) {
-		value = a.args[alias(name)].value
+	for _, arg := range a.args {
+		if arg.name == name {
+			value = arg.value
+			break
+		}
 	}
 	return value
 }
@@ -72,7 +77,11 @@ func (a *ArgParse) helpInfo() {
 	}
 
 	usage := ""
-	for alias, _ := range a.args {
+	for _, arg := range a.args {
+		alias := alias(arg.name)
+		if len(arg.choices) > 0 {
+			alias = alias + "=v"
+		}
 		usage = usage + " [" + alias + "]"
 	}
 
@@ -87,19 +96,31 @@ func (a *ArgParse) helpInfo() {
 
 	if len(a.args) > 0 {
 		maxLen := 0
-		for alias, _ := range a.args {
+		for _, arg := range a.args {
+			alias := alias(arg.name)
+			if len(arg.choices) > 0 {
+				alias = alias + "=v"
+			}
 			if len(alias) > maxLen {
 				maxLen = len(alias)
 			}
 		}
 
-		for alias, arg := range a.args {
-			sLen := 0
+		for k, _ := range a.args {
+			alias := alias(a.args[k].name)
+			help := a.args[k].help
+			strLen := 0
+			if len(a.args[k].choices) > 0 {
+				if a.args[k].choices[0] != "" {
+					help = fmt.Sprintf("%s [%s]", help, strings.Join(a.args[k].choices, ","))
+				}
+				alias = alias + "=v"
+			}
 			if len(alias) < maxLen {
-				sLen = maxLen - len(alias)
+				strLen = maxLen - len(alias)
 			}
 
-			fmt.Printf(alias + drawSpaces(sLen) + " %s\n", arg.help)
+			fmt.Printf(alias + drawSpaces(strLen) + " %s\n", help)
 		}
 	}
 
@@ -113,7 +134,11 @@ func (a *ArgParse) errorInfo(err string) {
 	}
 
 	usage := ""
-	for alias, _ := range a.args {
+	for _, arg := range a.args {
+		alias := alias(arg.name)
+		if len(arg.choices) > 0 {
+			alias = alias + "=v"
+		}
 		usage = usage + " [" + alias + "]"
 	}
 
@@ -142,15 +167,18 @@ func (a *ArgParse) parseInput() {
 
 		// check arg existence
 
-		bad = []string{}
 		reg2 := regexp.MustCompile("=(.*)$")
 
 		for _, osArg := range os.Args[1:] {
 			isset := false
-			alias := reg2.ReplaceAllString(osArg, "")
-			if _, ok := a.args[alias]; ok {
-				isset = true
-				a.args[alias].active = true
+			alias1 := reg2.ReplaceAllString(osArg, "")
+			for k, _ := range a.args {
+				alias2 := alias(a.args[k].name)
+				if alias1 == alias2 {
+					a.args[k].active = true
+					isset = true
+					break
+				}
 			}
 			if !isset {
 				bad = append(bad, osArg)
@@ -164,33 +192,39 @@ func (a *ArgParse) parseInput() {
 
 		// check arg value
 
-		bad = []string{}
-		reg3, _ := regexp.Compile("^--([0-9a-zA-Z-_]+)=([0-9a-zA-Z-_]+)$")
-		reg4 := regexp.MustCompile("^--([0-9a-zA-Z-_]+)=")
+		reg3 := regexp.MustCompile("^--([0-9a-zA-Z-_]+)=?")
 
 		for _, osArg := range os.Args[1:] {
-			alias := reg2.ReplaceAllString(osArg, "")
+			alias1 := reg2.ReplaceAllString(osArg, "")
 
-			if reg3.MatchString(osArg) {
-				value := reg4.ReplaceAllString(osArg, "")
-				a.args[alias].value = value
+			for k, _ := range a.args {
+				alias2 := alias(a.args[k].name)
+				value := reg3.ReplaceAllString(osArg, "")
 
-				if len(a.args[alias].choices) > 0 {
-					isset := false
+				if alias1 == alias2 {
+					if len(a.args[k].choices) > 0 {
+						if value == "" {
+							bad = append(bad, osArg)
+							break
+						}
+						if a.args[k].choices[0] != "" {
+							isset := false
+							for _, val := range a.args[k].choices {
+								if val == value {
+									isset = true
+								}
+							}
 
-					for _, v := range a.args[alias].choices {
-						if v == value {
-							isset = true
+							if !isset {
+								bad = append(bad, osArg)
+							}
+						}
+						a.args[k].value = value
+					} else {
+						if value != "" {
+							bad = append(bad, osArg)
 						}
 					}
-
-					if !isset {
-						bad = append(bad, osArg)
-					}
-				}
-			} else {
-				if len(a.args[alias].choices) > 0 {
-					bad = append(bad, osArg)
 				}
 			}
 		}
