@@ -1,6 +1,6 @@
 package argparse
 
-func alias(val string) string {
+func makeAlias(val string) string {
 	return "--" + val
 }
 

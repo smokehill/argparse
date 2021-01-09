@@ -63,7 +63,10 @@ func (a *ArgParse) Get(name string) string {
 }
 
 func (a *ArgParse) Parse() {
-	if len(os.Args) > 1 && len(a.args) > 0 {
+	if len(a.args) > 0 {
+		a.checkChoices()
+	}
+	if len(os.Args) > 1 {
 		a.parseInput()
 	} else {
 		a.helpInfo()
@@ -78,7 +81,7 @@ func (a *ArgParse) helpInfo() {
 
 	usage := ""
 	for _, arg := range a.args {
-		alias := alias(arg.name)
+		alias := makeAlias(arg.name)
 		if len(arg.choices) > 0 {
 			alias = alias + "=v"
 		}
@@ -97,7 +100,7 @@ func (a *ArgParse) helpInfo() {
 	if len(a.args) > 0 {
 		maxLen := 0
 		for _, arg := range a.args {
-			alias := alias(arg.name)
+			alias := makeAlias(arg.name)
 			if len(arg.choices) > 0 {
 				alias = alias + "=v"
 			}
@@ -107,13 +110,11 @@ func (a *ArgParse) helpInfo() {
 		}
 
 		for k, _ := range a.args {
-			alias := alias(a.args[k].name)
+			alias := makeAlias(a.args[k].name)
 			help := a.args[k].help
 			strLen := 0
-			if len(a.args[k].choices) > 0 {
-				if a.args[k].choices[0] != "" {
-					help = fmt.Sprintf("%s [%s]", help, strings.Join(a.args[k].choices, ","))
-				}
+			if len(a.args[k].choices) > 1 {
+				help = fmt.Sprintf("%s [%s]", help, strings.Join(a.args[k].choices, ","))
 				alias = alias + "=v"
 			}
 			if len(alias) < maxLen {
@@ -135,7 +136,7 @@ func (a *ArgParse) errorInfo(err string) {
 
 	usage := ""
 	for _, arg := range a.args {
-		alias := alias(arg.name)
+		alias := makeAlias(arg.name)
 		if len(arg.choices) > 0 {
 			alias = alias + "=v"
 		}
@@ -144,6 +145,27 @@ func (a *ArgParse) errorInfo(err string) {
 
 	fmt.Println("Usage: " + name + usage)
 	fmt.Println(err)
+
+	os.Exit(0)
+}
+
+func (a *ArgParse) checkChoices() {
+	bad := []string{}
+	for _, arg := range a.args {
+		if len(arg.choices) == 1 && arg.choices[0] != "" {
+			bad = append(bad, makeAlias(arg.name) + "=v")
+		} else if len(arg.choices) > 1 {
+			for _, v := range arg.choices {
+				if v == "" {
+					bad = append(bad, makeAlias(arg.name) + "=v")
+				}
+			}
+		}
+	}
+
+	if len(bad) > 0 {
+		a.errorInfo(fmt.Sprintf("Error: bad arguments choices %v\n", bad))
+	}
 }
 
 func (a *ArgParse) parseInput() {
@@ -162,7 +184,6 @@ func (a *ArgParse) parseInput() {
 
 		if len(bad) > 0 {
 			a.errorInfo(fmt.Sprintf("Error: bad arguments format %v\n", bad))
-			return
 		}
 
 		// check arg existence
@@ -173,7 +194,7 @@ func (a *ArgParse) parseInput() {
 			isset := false
 			alias1 := reg2.ReplaceAllString(osArg, "")
 			for k, _ := range a.args {
-				alias2 := alias(a.args[k].name)
+				alias2 := makeAlias(a.args[k].name)
 				if alias1 == alias2 {
 					a.args[k].active = true
 					isset = true
@@ -187,7 +208,6 @@ func (a *ArgParse) parseInput() {
 
 		if len(bad) > 0 {
 			a.errorInfo(fmt.Sprintf("Error: unrecognized arguments %v\n", bad))
-			return
 		}
 
 		// check arg value
@@ -198,7 +218,7 @@ func (a *ArgParse) parseInput() {
 			alias1 := reg2.ReplaceAllString(osArg, "")
 
 			for k, _ := range a.args {
-				alias2 := alias(a.args[k].name)
+				alias2 := makeAlias(a.args[k].name)
 				value := reg3.ReplaceAllString(osArg, "")
 
 				if alias1 == alias2 {
@@ -231,7 +251,6 @@ func (a *ArgParse) parseInput() {
 
 		if len(bad) > 0 {
 			a.errorInfo(fmt.Sprintf("Error: bad arguments value %v\n", bad))
-			return
 		}
 	}
 }
