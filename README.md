@@ -1,6 +1,6 @@
 # argparse
 
-In development...
+[![Build Status](https://travis-ci.com/smokehill/argparse.svg?branch=master)](https://travis-ci.com/smokehill/argparse)
 
 Simple cli argument parser.
 
@@ -28,7 +28,7 @@ func main() {
 }
 ```
 
-Help info example:
+Output example:
 ```
 Usage: test [--arg1=v] [--arg2=v] [--arg3]
 Test script
