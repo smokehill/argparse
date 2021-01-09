@@ -145,6 +145,7 @@ func (a *ArgParse) errorInfo(err string) {
 
 	fmt.Println("Usage: " + name + usage)
 	fmt.Println(err)
+	fmt.Println("")
 
 	os.Exit(0)
 }
@@ -157,14 +158,15 @@ func (a *ArgParse) checkChoices() {
 		} else if len(arg.choices) > 1 {
 			for _, v := range arg.choices {
 				if v == "" {
-					bad = append(bad, makeAlias(arg.name) + "=v")
+					bad = append(bad, fmt.Sprintf("%s=v %v", makeAlias(arg.name), arg.choices))
 				}
 			}
 		}
 	}
 
 	if len(bad) > 0 {
-		a.errorInfo(fmt.Sprintf("Error: bad arguments choices %v\n", bad))
+		err := "Error: bad arguments choices: " + strings.Join(bad, ", ")
+		a.errorInfo(err)
 	}
 }
 
@@ -183,7 +185,8 @@ func (a *ArgParse) parseInput() {
 		}
 
 		if len(bad) > 0 {
-			a.errorInfo(fmt.Sprintf("Error: bad arguments format %v\n", bad))
+			err := "Error: bad arguments format: " + strings.Join(bad, ", ")
+			a.errorInfo(err)
 		}
 
 		// check arg existence
@@ -207,7 +210,8 @@ func (a *ArgParse) parseInput() {
 		}
 
 		if len(bad) > 0 {
-			a.errorInfo(fmt.Sprintf("Error: unrecognized arguments %v\n", bad))
+			err := "Error: unrecognized arguments: " + strings.Join(bad, ", ")
+			a.errorInfo(err)
 		}
 
 		// check arg value
@@ -250,7 +254,8 @@ func (a *ArgParse) parseInput() {
 		}
 
 		if len(bad) > 0 {
-			a.errorInfo(fmt.Sprintf("Error: bad arguments value %v\n", bad))
+			err := "Error: bad arguments value: " + strings.Join(bad, ", ")
+			a.errorInfo(err)
 		}
 	}
 }
