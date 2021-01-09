@@ -7,39 +7,54 @@ import (
 	"strings"
 )
 
+// ArgParse argument parser instance.
 type ArgParse struct {
+	// Program name (optional).
 	name string
+	// Program description (optional).
 	description string
+	// Arguments list.
 	args []*Arg
 }
 
+// Arg argument instance.
 type Arg struct {
+	// Argument name.
 	name string
+	// Argument description (optional).
 	help string
+	// Argument choices (optional).
 	choices []string
+	// Argument value from input.
 	value string
+	// True if input argument exists.
 	active bool
 }
 
+// ArgumentParser return ArgParse instance.
 func ArgumentParser() *ArgParse {
 	return &ArgParse{"", "", []*Arg{}}
 }
 
+// SetName sets program name.
 func (a *ArgParse) SetName(name string) *ArgParse {
 	a.name = name
 	return a
 }
 
+// SetDescription sets program description.
 func (a *ArgParse) SetDescription(description string) *ArgParse {
 	a.description = description
 	return a
 }
 
+// SetArgument defines a new argument.
 func (a *ArgParse) SetArgument(name string, help string, choices []string) *ArgParse {
 	a.args = append(a.args, &Arg{name, help, choices, "", false})
 	return a
 }
 
+// Has checks if input argument is preset.
 func (a *ArgParse) Has(name string) bool {
 	isset := false
 	for _, arg := range a.args {
@@ -51,6 +66,7 @@ func (a *ArgParse) Has(name string) bool {
 	return isset
 }
 
+// Get returns argument value.
 func (a *ArgParse) Get(name string) string {
 	value := ""
 	for _, arg := range a.args {
@@ -62,6 +78,7 @@ func (a *ArgParse) Get(name string) string {
 	return value
 }
 
+// Parse handles input and parses available arguments data.
 func (a *ArgParse) Parse() {
 	if len(a.args) > 0 {
 		a.checkChoices()
@@ -73,6 +90,7 @@ func (a *ArgParse) Parse() {
 	}
 }
 
+// helpInfo displays help information.
 func (a *ArgParse) helpInfo() {
 	name := os.Args[0]
 	if a.name != "" {
@@ -114,7 +132,10 @@ func (a *ArgParse) helpInfo() {
 			help := a.args[k].help
 			strLen := 0
 			if len(a.args[k].choices) > 1 {
-				help = fmt.Sprintf("%s [%s]", help, strings.Join(a.args[k].choices, ","))
+				if help != "" {
+					help = help + " "
+				}
+				help = fmt.Sprintf("%s[%s]", help, strings.Join(a.args[k].choices, ","))
 				alias = alias + "=v"
 			}
 			if len(alias) < maxLen {
@@ -128,6 +149,7 @@ func (a *ArgParse) helpInfo() {
 	fmt.Println("")
 }
 
+// errorInfo displays error information.
 func (a *ArgParse) errorInfo(err string) {
 	name := os.Args[0]
 	if a.name != "" {
@@ -150,8 +172,10 @@ func (a *ArgParse) errorInfo(err string) {
 	os.Exit(0)
 }
 
+// checkChoices checks argument choices.
 func (a *ArgParse) checkChoices() {
 	bad := []string{}
+
 	for _, arg := range a.args {
 		if len(arg.choices) == 1 && arg.choices[0] != "" {
 			bad = append(bad, makeAlias(arg.name) + "=v")
@@ -170,92 +194,95 @@ func (a *ArgParse) checkChoices() {
 	}
 }
 
+// parseInput handles input.
 func (a *ArgParse) parseInput() {
-	if len(os.Args) > 1 {
+	bad := []string{}
 
-		// check arg scheme
+	// Check input argument scheme.
 
-		bad := []string{}
-		reg1, _ := regexp.Compile("(^--([0-9a-zA-Z-_]+)$|^--([0-9a-zA-Z-_]+)=([0-9a-zA-Z-_]+)$)")
+	reg1, _ := regexp.Compile("(^--([0-9a-zA-Z-_]+)$|^--([0-9a-zA-Z-_]+)=([0-9a-zA-Z-_]+)$)")
 
-		for _, osArg := range os.Args[1:] {
-			if !reg1.MatchString(osArg) {
-				bad = append(bad, osArg)
+	for _, osArg := range os.Args[1:] {
+		if !reg1.MatchString(osArg) {
+			bad = append(bad, osArg)
+		}
+	}
+
+	if len(bad) > 0 {
+		err := "Error: bad arguments format: " + strings.Join(bad, ", ")
+		a.errorInfo(err)
+	}
+
+	// Recognize input argument.
+
+	reg2 := regexp.MustCompile("=(.*)$")
+
+	for _, osArg := range os.Args[1:] {
+		isset := false
+		alias1 := reg2.ReplaceAllString(osArg, "")
+
+		for k, _ := range a.args {
+			alias2 := makeAlias(a.args[k].name)
+
+			if alias1 == alias2 {
+				a.args[k].active = true
+				isset = true
+				break
 			}
 		}
-
-		if len(bad) > 0 {
-			err := "Error: bad arguments format: " + strings.Join(bad, ", ")
-			a.errorInfo(err)
+		if !isset {
+			bad = append(bad, osArg)
 		}
+	}
 
-		// check arg existence
+	if len(bad) > 0 {
+		err := "Error: unrecognized arguments: " + strings.Join(bad, ", ")
+		a.errorInfo(err)
+	}
 
-		reg2 := regexp.MustCompile("=(.*)$")
+	// Check input argument value.
 
-		for _, osArg := range os.Args[1:] {
-			isset := false
-			alias1 := reg2.ReplaceAllString(osArg, "")
-			for k, _ := range a.args {
-				alias2 := makeAlias(a.args[k].name)
-				if alias1 == alias2 {
-					a.args[k].active = true
-					isset = true
-					break
-				}
-			}
-			if !isset {
-				bad = append(bad, osArg)
-			}
-		}
+	reg3 := regexp.MustCompile("^--([0-9a-zA-Z-_]+)=?")
 
-		if len(bad) > 0 {
-			err := "Error: unrecognized arguments: " + strings.Join(bad, ", ")
-			a.errorInfo(err)
-		}
+	for _, osArg := range os.Args[1:] {
+		alias1 := reg2.ReplaceAllString(osArg, "")
 
-		// check arg value
+		for k, _ := range a.args {
+			alias2 := makeAlias(a.args[k].name)
+			value := reg3.ReplaceAllString(osArg, "")
 
-		reg3 := regexp.MustCompile("^--([0-9a-zA-Z-_]+)=?")
+			if alias1 == alias2 {
+				if len(a.args[k].choices) > 0 {
+					if value == "" {
+						bad = append(bad, osArg)
+						break
+					}
 
-		for _, osArg := range os.Args[1:] {
-			alias1 := reg2.ReplaceAllString(osArg, "")
-
-			for k, _ := range a.args {
-				alias2 := makeAlias(a.args[k].name)
-				value := reg3.ReplaceAllString(osArg, "")
-
-				if alias1 == alias2 {
-					if len(a.args[k].choices) > 0 {
-						if value == "" {
-							bad = append(bad, osArg)
-							break
-						}
-						if a.args[k].choices[0] != "" {
-							isset := false
-							for _, val := range a.args[k].choices {
-								if val == value {
-									isset = true
-								}
-							}
-
-							if !isset {
-								bad = append(bad, osArg)
+					if a.args[k].choices[0] != "" {
+						isset := false
+						for _, val := range a.args[k].choices {
+							if val == value {
+								isset = true
 							}
 						}
-						a.args[k].value = value
-					} else {
-						if value != "" {
+
+						if !isset {
 							bad = append(bad, osArg)
 						}
+					}
+
+					a.args[k].value = value
+				} else {
+					if value != "" {
+						bad = append(bad, osArg)
 					}
 				}
 			}
 		}
+	}
 
-		if len(bad) > 0 {
-			err := "Error: bad arguments value: " + strings.Join(bad, ", ")
-			a.errorInfo(err)
-		}
+	if len(bad) > 0 {
+		err := "Error: bad arguments value: " + strings.Join(bad, ", ")
+		a.errorInfo(err)
 	}
 }
