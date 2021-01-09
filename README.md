@@ -4,6 +4,12 @@
 
 Simple cli argument parser.
 
+## Install
+
+```
+go get -u github.com/smokehill/argparse
+```
+
 ## Example
 
 ```go
@@ -28,7 +34,7 @@ func main() {
 }
 ```
 
-Output example:
+Help output:
 ```
 Usage: test [--arg1=v] [--arg2=v] [--arg3]
 Test script
