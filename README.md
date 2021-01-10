@@ -31,6 +31,11 @@ func main() {
     if a.Has("arg2") {
         fmt.Println(a.Get("arg2")) // 123
     }
+
+    // test --arg3
+    if a.Has("arg3") {
+        fmt.Println(a.Get("arg3")) // ""
+    }
 }
 ```
 
