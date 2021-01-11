@@ -7,54 +7,39 @@ import (
 	"strings"
 )
 
-// ArgParse argument parser instance.
 type ArgParse struct {
-	// Program name (optional).
 	name string
-	// Program description (optional).
 	description string
-	// Arguments list.
 	args []*Arg
 }
 
-// Arg argument instance.
 type Arg struct {
-	// Argument name.
 	name string
-	// Argument description (optional).
 	help string
-	// Argument choices (optional).
 	choices []string
-	// Argument value from input.
 	value string
-	// True if input argument exists.
 	active bool
 }
 
-// ArgumentParser return ArgParse instance.
 func ArgumentParser() *ArgParse {
 	return &ArgParse{"", "", []*Arg{}}
 }
 
-// SetName sets program name.
 func (a *ArgParse) SetName(name string) *ArgParse {
 	a.name = name
 	return a
 }
 
-// SetDescription sets program description.
 func (a *ArgParse) SetDescription(description string) *ArgParse {
 	a.description = description
 	return a
 }
 
-// SetArgument defines a new argument.
 func (a *ArgParse) SetArgument(name string, help string, choices []string) *ArgParse {
 	a.args = append(a.args, &Arg{name, help, choices, "", false})
 	return a
 }
 
-// Has checks if input argument is preset.
 func (a *ArgParse) Has(name string) bool {
 	isset := false
 	for _, arg := range a.args {
@@ -66,7 +51,6 @@ func (a *ArgParse) Has(name string) bool {
 	return isset
 }
 
-// Get returns argument value.
 func (a *ArgParse) Get(name string) string {
 	value := ""
 	for _, arg := range a.args {
@@ -78,7 +62,6 @@ func (a *ArgParse) Get(name string) string {
 	return value
 }
 
-// Parse handles input and parses available arguments data.
 func (a *ArgParse) Parse() {
 	if len(a.args) > 0 {
 		a.checkArgName()
@@ -91,7 +74,6 @@ func (a *ArgParse) Parse() {
 	}
 }
 
-// helpInfo displays help information.
 func (a *ArgParse) helpInfo() {
 	name := os.Args[0]
 	if a.name != "" {
@@ -142,7 +124,6 @@ func (a *ArgParse) helpInfo() {
 			if len(alias) < maxLen {
 				strLen = maxLen - len(alias)
 			}
-
 			fmt.Printf(alias + drawSpaces(strLen) + " %s\n", help)
 		}
 	}
@@ -150,7 +131,6 @@ func (a *ArgParse) helpInfo() {
 	fmt.Println("")
 }
 
-// errorInfo displays error information.
 func (a *ArgParse) errorInfo(err string) {
 	name := os.Args[0]
 	if a.name != "" {
@@ -173,7 +153,6 @@ func (a *ArgParse) errorInfo(err string) {
 	os.Exit(0)
 }
 
-// checkArgName checks argument name.
 func (a *ArgParse) checkArgName() {
 	bad := []string{}
 	reg, _ := regexp.Compile("^[0-9a-zA-Z-_]+$")
@@ -191,7 +170,6 @@ func (a *ArgParse) checkArgName() {
 	}
 }
 
-// checkArgChoices checks argument choices.
 func (a *ArgParse) checkArgChoices() {
 	bad := []string{}
 
@@ -213,14 +191,11 @@ func (a *ArgParse) checkArgChoices() {
 	}
 }
 
-// parseInput handles input.
 func (a *ArgParse) parseInput() {
 	bad := []string{}
 
-	// Check input argument scheme.
-
+	// check input argument scheme
 	reg1, _ := regexp.Compile("(^--([0-9a-zA-Z-_]+)$|^--([0-9a-zA-Z-_]+)=([0-9a-zA-Z-_]+)$)")
-
 	for _, osArg := range os.Args[1:] {
 		if !reg1.MatchString(osArg) {
 			bad = append(bad, osArg)
@@ -232,18 +207,15 @@ func (a *ArgParse) parseInput() {
 		a.errorInfo(err)
 	}
 
-	// Recognize input argument.
-
+	// recognize input argument
 	reg2 := regexp.MustCompile("=(.*)$")
-
 	for _, osArg := range os.Args[1:] {
 		isset := false
 		alias1 := reg2.ReplaceAllString(osArg, "")
-
 		for k, _ := range a.args {
 			alias2 := makeAlias(a.args[k].name)
-
 			if alias1 == alias2 {
+				// make argument active
 				a.args[k].active = true
 				isset = true
 				break
@@ -259,24 +231,21 @@ func (a *ArgParse) parseInput() {
 		a.errorInfo(err)
 	}
 
-	// Check input argument value.
-
+	// check input argument value (any value and static choices)
 	reg3 := regexp.MustCompile("^--([0-9a-zA-Z-_]+)=?")
-
 	for _, osArg := range os.Args[1:] {
 		alias1 := reg2.ReplaceAllString(osArg, "")
-
 		for k, _ := range a.args {
 			alias2 := makeAlias(a.args[k].name)
 			value := reg3.ReplaceAllString(osArg, "")
-
 			if alias1 == alias2 {
 				if len(a.args[k].choices) > 0 {
+					// check empty value
 					if value == "" {
 						bad = append(bad, osArg)
 						break
 					}
-
+					// check value in choices
 					if a.args[k].choices[0] != "" {
 						isset := false
 						for _, val := range a.args[k].choices {
@@ -284,12 +253,11 @@ func (a *ArgParse) parseInput() {
 								isset = true
 							}
 						}
-
 						if !isset {
 							bad = append(bad, osArg)
 						}
 					}
-
+					// remember argument value
 					a.args[k].value = value
 				} else {
 					if value != "" {
