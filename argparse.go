@@ -81,7 +81,8 @@ func (a *ArgParse) Get(name string) string {
 // Parse handles input and parses available arguments data.
 func (a *ArgParse) Parse() {
 	if len(a.args) > 0 {
-		a.checkChoices()
+		a.checkArgName()
+		a.checkArgChoices()
 	}
 	if len(os.Args) > 1 {
 		a.parseInput()
@@ -172,8 +173,26 @@ func (a *ArgParse) errorInfo(err string) {
 	os.Exit(0)
 }
 
-// checkChoices checks argument choices.
-func (a *ArgParse) checkChoices() {
+// checkArgName checks argument name.
+func (a *ArgParse) checkArgName() {
+	bad := []string{}
+	reg, _ := regexp.Compile("^[0-9a-zA-Z-_]+$")
+
+	for _, arg := range a.args {
+		if !reg.MatchString(arg.name) {
+			alias := makeAlias(arg.name)
+			bad = append(bad, alias)
+		}
+	}
+
+	if len(bad) > 0 {
+		err := "Error: bad arguments names: " + strings.Join(bad, ", ")
+		a.errorInfo(err)
+	}
+}
+
+// checkArgChoices checks argument choices.
+func (a *ArgParse) checkArgChoices() {
 	bad := []string{}
 
 	for _, arg := range a.args {
