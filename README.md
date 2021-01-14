@@ -41,11 +41,12 @@ func main() {
 
 Help output:
 ```
-Usage: test [--arg1=v] [--arg2=v] [--arg3]
+Usage: test [--help] [--arg1=v] [--arg2=v] [--arg3]
 Test script
 
 Optional arguments:
---arg1=v  arg1 info [a,b]
---arg2=v  arg2 info
---arg3    arg3 info
+--help   show this help message
+--arg1=v info arg1 [a,b]
+--arg2   info arg2
+--arg3   info arg3
 ```
