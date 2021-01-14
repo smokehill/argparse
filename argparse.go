@@ -22,7 +22,9 @@ type Arg struct {
 }
 
 func ArgumentParser() *ArgParse {
-	return &ArgParse{"", "", []*Arg{}}
+	args := []*Arg{}
+	args = append(args, &Arg{"help", "show this help message", []string{}, "", false})
+	return &ArgParse{"", "", args}
 }
 
 func (a *ArgParse) SetName(name string) *ArgParse {
@@ -69,8 +71,16 @@ func (a *ArgParse) Parse() {
 	}
 	if len(os.Args) > 1 {
 		a.parseInput()
+		// show help menu
+		if os.Args[1] == "--help" {
+			a.helpInfo()
+		}
 	} else {
-		a.helpInfo()
+		name := os.Args[0]
+		if a.name != "" {
+			name = a.name
+		}
+		fmt.Println("Use: " + name + " --help")
 	}
 }
 
