@@ -160,7 +160,7 @@ func (a *ArgParse) errorInfo(err string) {
 	fmt.Println(err)
 	fmt.Println("")
 
-	os.Exit(0)
+	os.Exit(1)
 }
 
 func (a *ArgParse) checkArgName() {
