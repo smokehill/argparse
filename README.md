@@ -47,6 +47,6 @@ Test script
 Optional arguments:
 --help   show this help message
 --arg1=v info arg1 [a,b]
---arg2   info arg2
+--arg2=v info arg2
 --arg3   info arg3
 ```

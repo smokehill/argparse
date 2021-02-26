@@ -124,11 +124,13 @@ func (a *ArgParse) helpInfo() {
 			alias := makeAlias(a.args[k].name)
 			help := a.args[k].help
 			strLen := 0
-			if len(a.args[k].choices) > 1 {
-				if help != "" {
-					help = help + " "
+			if len(a.args[k].choices) > 0 {
+				if len(a.args[k].choices) > 1 {
+					if help != "" {
+						help = help + " "
+					}
+					help = fmt.Sprintf("%s[%s]", help, strings.Join(a.args[k].choices, ","))
 				}
-				help = fmt.Sprintf("%s[%s]", help, strings.Join(a.args[k].choices, ","))
 				alias = alias + "=v"
 			}
 			if len(alias) < maxLen {
