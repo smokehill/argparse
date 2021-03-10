@@ -180,6 +180,24 @@ func (a *ArgParse) checkArgName() {
 		err := "Error: bad arguments names: " + strings.Join(bad, ", ")
 		a.errorInfo(err)
 	}
+
+	i := 0
+	end := len(a.args) - 1
+	for end > 0 {
+		for k, _ := range a.args {
+			if k != i && a.args[i].name == a.args[k].name {
+				alias := makeAlias(a.args[k].name)
+				bad = append(bad, alias)
+			}
+		}
+		i++
+		end--
+	}
+
+	if len(bad) > 0 {
+		err := "Error: duplicate arguments names: " + strings.Join(bad, ", ")
+		a.errorInfo(err)
+	}
 }
 
 func (a *ArgParse) checkArgChoices() {
