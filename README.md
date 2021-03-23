@@ -1,13 +1,13 @@
 # argparse
 
-[![Build Status](https://travis-ci.com/smokehill/argparse.svg?branch=master)](https://travis-ci.com/smokehill/argparse)
+[![Build Status](https://travis-ci.com/blues911/argparse.svg?branch=master)](https://travis-ci.com/blues911/argparse)
 
 Simple cli argument parser.
 
 ## Install
 
 ```
-go get -u github.com/smokehill/argparse
+go get -u github.com/blues911/argparse
 ```
 
 ## Example
